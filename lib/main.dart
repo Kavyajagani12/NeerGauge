@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_colors.dart';
 import 'main_scaffold.dart';
+import 'screens/auth/login_screen.dart';
 
 void main() {
   runApp(const NeerGaugeApp());
@@ -16,7 +17,7 @@ class NeerGaugeApp extends StatelessWidget {
       title: 'NeerGauge',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
-      home: const SplashScreen(),
+      home: const LoginScreen(),
     );
   }
 }

@@ -2,80 +2,159 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/station_status_card.dart';
+import '../widgets/water_monitoring_card.dart';
 import '../models/station_model.dart';
 import '../models/alert_model.dart';
 import 'alerts_screen.dart';
+import 'map_screen.dart';
+import 'analytics_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final stations = mockStations();
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
+class _HomeScreenState extends State<HomeScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  List<Station> _filteredStations = [];
+  List<Station> _displayedStations = [];
+  int _displayCount = 3;
+  bool _isSearching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredStations = mockStations();
+    _updateDisplayedStations();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _updateDisplayedStations() {
+    setState(() {
+      _displayedStations = _filteredStations.take(_displayCount).toList();
+    });
+  }
+
+  void _filterStations(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredStations = mockStations();
+      } else {
+        _filteredStations = mockStations().where((station) {
+          return station.location.toLowerCase().contains(query.toLowerCase());
+        }).toList();
+      }
+      _displayCount = 3;
+      _updateDisplayedStations();
+    });
+  }
+
+  void _loadMoreStations() {
+    setState(() {
+      _displayCount += 3;
+      _updateDisplayedStations();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return SafeArea(
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _TopBar()),
-          SliverToBoxAdapter(child: _SubHeader()),
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-          SliverToBoxAdapter(child: _HeroSection()),
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Real-time Monitoring Dashboard',
-                      style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 12),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final itemWidth = constraints.maxWidth >= 700
-                          ? (constraints.maxWidth - 24) / 3
-                          : constraints.maxWidth;
-                      return Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          SizedBox(width: itemWidth, child: const SummaryCard(title: 'Critical Monitoring', value: '3', icon: Icons.stacked_bar_chart, color: AppColors.statusCritical)),
-                          SizedBox(width: itemWidth, child: const SummaryCard(title: 'Water Level', value: '8.7m', icon: Icons.water_drop, color: AppColors.statusHigh)),
-                          SizedBox(width: itemWidth, child: const SummaryCard(title: 'Recharge Rate', value: '2.3', icon: Icons.trending_up, color: AppColors.statusOptimal)),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Text('Station Details', style: Theme.of(context).textTheme.titleLarge),
-                ],
-              ),
+          SliverToBoxAdapter(child: _SearchSection()),
+          _WaterMonitoringCards(),
+        ],
+      ),
+    );
+  }
+
+  Widget _SearchSection() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Search by District or State',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverLayoutBuilder(
-              builder: (context, constraints) {
-                final width = constraints.crossAxisExtent;
-                final crossAxisCount = width ~/ 320 > 0 ? width ~/ 320 : 1;
-                final isNarrow = crossAxisCount == 1;
-                final cardHeight = isNarrow ? 270.0 : 220.0;
-                return SliverGrid(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    mainAxisExtent: cardHeight,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => StationStatusCard(station: stations[index]),
-                    childCount: stations.length,
-                  ),
-                );
-              },
+          const SizedBox(height: 12),
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search by district or state...',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
             ),
+            onChanged: _filterStations,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _WaterMonitoringCards() {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            if (index < _displayedStations.length) {
+              return WaterMonitoringCard(
+                station: _displayedStations[index],
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AnalyticsScreen(),
+                    ),
+                  );
+                },
+              );
+            } else if (index == _displayedStations.length && _displayedStations.length < _filteredStations.length) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _loadMoreStations,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Load More'),
+                  ),
+                ),
+              );
+            }
+            return null;
+          },
+          childCount: _displayedStations.length + (_displayedStations.length < _filteredStations.length ? 1 : 0),
+        ),
       ),
     );
   }
@@ -90,66 +169,38 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          // Left: Logo + title
+          // Left: App Logo
+          const _NeerGaugeLogo(size: 40),
+          const Spacer(),
+          // Right: Profile, Settings, Alerts buttons
           Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              const _NeerGaugeLogo(size: 40),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('NeerGauge',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.w700)),
-                  Text('Smart Water Monitor',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(color: AppColors.textColorSecondary)),
-                ],
-              )
+              _IconSquare(
+                icon: Icons.person_outline,
+                onTap: () {
+                  // TODO: Navigate to profile
+                },
+                size: 44,
+              ),
+              const SizedBox(width: 8),
+              _IconSquare(
+                icon: Icons.settings_outlined,
+                onTap: () {
+                  // TODO: Navigate to settings
+                },
+                size: 44,
+              ),
+              const SizedBox(width: 8),
+              _IconSquare(
+                icon: Icons.warning_amber_outlined,
+                showDot: unreadCount > 0,
+                badgeCount: unreadCount,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AlertsScreen()),
+                ),
+                size: 44,
+              ),
             ],
-          ),
-          const SizedBox(width: 8),
-          // Right responsive controls
-          Flexible(
-            child: Wrap(
-              alignment: WrapAlignment.end,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 10,
-              runSpacing: 8,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.statusOptimal.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.wifi, color: AppColors.statusOptimal, size: 18),
-                      SizedBox(width: 6),
-                      Text('Online', style: TextStyle(color: AppColors.statusOptimal, fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                ),
-                _IconSquare(
-                  icon: Icons.warning_amber_outlined,
-                  showDot: unreadCount > 0,
-                  badgeCount: unreadCount,
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const AlertsScreen()),
-                  ),
-                  size: 44,
-                ),
-                const _IconSquare(icon: Icons.person_outline, size: 44),
-                const _IconSquare(icon: Icons.settings_outlined, size: 44),
-              ],
-            ),
           ),
         ],
       ),
@@ -294,74 +345,3 @@ class _IconButton extends StatelessWidget {
   }
 }
 
-class _SubHeader extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Color(0x11000000))),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Wrap(
-        spacing: 16,
-        runSpacing: 8,
-        children: const [
-          _InfoItem(label: 'Last Updated', value: '17/09/2025, 19:32:24'),
-          _InfoItem(label: 'Data Collection', value: '99.2% active'),
-          _InfoItem(label: 'System Status', value: 'All services operational'),
-          _InfoItem(label: 'Real-time monitoring', value: 'active', dotColor: Colors.green),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? dotColor;
-  const _InfoItem({required this.label, required this.value, this.dotColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (dotColor != null)
-          Container(width: 8, height: 8, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
-        if (dotColor != null) const SizedBox(width: 6),
-        Text('$label: ', style: Theme.of(context).textTheme.bodySmall),
-        Text(value, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
-      ],
-    );
-  }
-}
-
-class _HeroSection extends StatelessWidget {
-  const _HeroSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(
-        children: [
-          Text(
-            'Smart India Hackathon 2025',
-            textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .headlineLarge
-                ?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Revolutionary groundwater monitoring system integrating 5,260 DWLR stations across India.\nReal-time water resource evaluation for sustainable management.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-        ],
-      ),
-    );
-  }
-}

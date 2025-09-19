@@ -36,6 +36,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.3.1
   flutter_native_splash: ^2.4.1
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  flutter_typeahead: ^5.2.0
 
 dev_dependencies:
   flutter_test:
@@ -62,17 +65,20 @@ flutter:
 
   assets:
     - assets/logo/
+    - assets/data/
 
 # Splash screen configuration
 flutter_native_splash:
   color: "#F5F7FA"
   image: assets/logo/neergauge.png
   android_12:
+
     image: assets/logo/neergauge.png
     color: "#F5F7FA"
 
 # App launcher icon configuration
 flutter_launcher_icons:
+
   image_path: assets/logo/neergauge.png
   android: true
   ios: true

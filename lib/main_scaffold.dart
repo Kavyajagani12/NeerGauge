@@ -4,6 +4,7 @@ import 'screens/alerts_screen.dart';
 import 'screens/stakeholder_dashboard_screen.dart';
 import 'screens/assistant_screen.dart';
 import 'screens/analytics_screen.dart';
+import 'screens/map_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -17,7 +18,7 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   final _screens = const [
     HomeScreen(),
-    Placeholder(),
+    MapScreen(),
     AssistantScreen(),
     AnalyticsScreen(),
   ];

@@ -1,0 +1,4 @@
+[
+  {"stationId":"DWLR001","name":"Udaipur Lake DWLR","location":"City Palace Area, Udaipur, Rajasthan","lat":24.5854,"lng":73.7125,"status":"low","level_m":27.9,"capacity_pct":36,"depth_m":78,"installed":2019},
+  {"stationId":"DWLR002","name":"Delhi Ridge","location":"New Delhi, Delhi","lat":28.6519,"lng":77.2219,"status":"high","level_m":16.0,"capacity_pct":85,"depth_m":18,"installed":2018}
+]
